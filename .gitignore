@@ -8,3 +8,4 @@ data/
 .vercel
 .claude/worktrees/
 results/backtest_dev.json
+results/backtest_forward.json

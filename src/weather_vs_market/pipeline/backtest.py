@@ -36,6 +36,15 @@ from weather_vs_market.storage import store
 log = logging.getLogger("wvm.backtest")
 
 TEST = ("2025-07-01", "2026-09-30")
+FORWARD_START = "2026-10-01"   # first target date after the model was frozen
+SETTLE_LAG_DAYS = 2            # results and archives can trail the day by a day or more
+
+
+def forward_window(today: date | None = None) -> tuple[str, str]:
+    """Every target date since the freeze that has had time to settle."""
+    today = today or date.today()
+    return FORWARD_START, (today - timedelta(days=SETTLE_LAG_DAYS)).isoformat()
+
 SOURCES = {"kalshi": "kalshi_candles", "polymarket": "polymarket_history"}
 MAX_SPREAD = 0.25
 # Kalshi emits a candle only for hours with activity; the book persists between
@@ -346,4 +355,5 @@ def score(settings: Settings, engine: Engine, window: tuple[str, str], name: str
     doc["data_quality"] = {"kalshi_cli_agreement": cli_agreement(settings, engine, *window)}
     RESULTS_DIR.mkdir(exist_ok=True)
     (RESULTS_DIR / f"backtest_{name}.json").write_text(json.dumps(doc, indent=1) + "\n")
+    store.save_result(engine, name, doc, generated_ts=doc["generated_ts"])
     return doc

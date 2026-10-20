@@ -12,6 +12,16 @@ export function monthSpan([start, end]: [string, string]): string {
   return `${f(start)} – ${f(end)}`
 }
 
+/** "Oct 1 – Oct 18, 2026" (the year once when both ends share it). */
+export function daySpan([start, end]: [string, string]): string {
+  const d = (iso: string) => new Date(`${iso}T12:00:00Z`)
+  const f = (x: Date, year: boolean) =>
+    x.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' })
+  const [a, b] = [d(start), d(end)]
+  const same = a.getUTCFullYear() === b.getUTCFullYear()
+  return `${f(a, !same)} – ${f(b, true)}`
+}
+
 export function ago(ts: number, now = Date.now() / 1000): string {
   const m = Math.max(0, Math.round((now - ts) / 60))
   if (m < 60) return `${m} min ago`

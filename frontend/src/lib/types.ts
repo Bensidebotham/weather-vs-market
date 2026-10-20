@@ -68,6 +68,7 @@ export type Dashboard = {
   schema_version: number
   generated_ts: number
   backtest: Backtest | null
+  forward?: Backtest | null
   live: { model: string; scores: Record<string, { summary: Summary[]; n_events: number }> }
   tracking: {
     n_markets: number

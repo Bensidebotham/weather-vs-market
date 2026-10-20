@@ -22,3 +22,9 @@ def test_dump_tables_writes_parquet(engine, tmp_path):
     counts = P.dump_tables(engine, str(tmp_path / "dump"))
     assert counts["vmarket"] == 1
     assert pq.read_table(str(tmp_path / "dump" / "vmarket.parquet")).num_rows == 1
+
+
+def test_publish_includes_the_stored_forward_record(engine):
+    S.save_result(engine, "forward", {"window_name": "forward", "venues": {}}, generated_ts=1.0)
+    doc = P.build_doc(load_settings(), engine)
+    assert doc["forward"]["window_name"] == "forward"

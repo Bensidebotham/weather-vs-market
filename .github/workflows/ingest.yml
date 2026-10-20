@@ -1,7 +1,10 @@
 name: ingest
 on:
   schedule:
-    - cron: "17 * * * *"   # hourly, off the top of the hour when Actions is busiest
+    # Twice an hour, off the top of the hour. GitHub throttles scheduled runs (an
+    # hourly cron fired only 3-7 times a day in Oct 2026), so ask more often. Every
+    # 15 min would keep Neon's free-tier compute awake past its 100 CU-hour budget.
+    - cron: "7,37 * * * *"
   workflow_dispatch: {}
 permissions:
   contents: read

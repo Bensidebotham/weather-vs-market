@@ -44,7 +44,7 @@ flowchart LR
 
 The model, `det_gauss_v1`, is deliberately simple: the mean of the GFS and ECMWF forecasts issued one or
 two days earlier, plus a per-station bias, with a Normal error whose width comes from the training window.
-A second, ensemble-based model runs live every hour; Open-Meteo keeps no archive of ensemble runs, so it can
+A second, ensemble-based model runs live, twice an hour; Open-Meteo keeps no archive of ensemble runs, so it can
 only be scored going forward.
 
 ## Why the numbers can be trusted
@@ -62,7 +62,7 @@ only be scored going forward.
 - **Each venue on its own station.** Kalshi NYC settles on Central Park and Polymarket NYC on LaGuardia;
   Chicago is Midway vs. O'Hare. Each market is modeled and fit at the station it settles on.
 - **Failures are not data.** A failed forecast fetch is skipped and counted, never stored as a 0% forecast.
-  A one-sided order book is not a price. An hourly run that finds no markets fails the job.
+  A one-sided order book is not a price. An ingest run that finds no markets fails the job.
 - **Generated results.** The table above and [docs/RESULTS.md](docs/RESULTS.md) are written by the
   pipeline from `results/backtest_test.json`.
 
@@ -105,11 +105,15 @@ Set `DATABASE_URL` to use Postgres instead of SQLite. A weekly Parquet dump of e
 the [`data-latest` release](https://github.com/Bensidebotham/weather-vs-market/releases/tag/data-latest)
 for analysis without running anything.
 
-## Live pipeline
+## Forward record and live pipeline
 
-`.github/workflows/ingest.yml` runs hourly: settle finished markets, snapshot open ones with the live model,
-and publish a document the dashboard reads from Postgres through a read-only role. Fresh data needs no
-commit or redeploy.
+- **Forward record** (`.github/workflows/forward.yml`, weekly): the frozen model is scored, exactly as in
+  the test window, on every day since 2026-10-01, rebuilt from the public archives. It is data that did not
+  exist when the model was built, reported separately on the dashboard and never pooled with the test.
+- **Live** (`.github/workflows/ingest.yml`, twice an hour): settle finished markets, snapshot open ones
+  with the live ensemble model, and publish a document the dashboard reads from Postgres through a
+  read-only role. Fresh data needs no commit or redeploy. (GitHub throttles scheduled runs, so the
+  workflow asks twice an hour to land close to hourly.)
 
 ## Layout
 

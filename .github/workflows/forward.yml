@@ -1,0 +1,28 @@
+name: forward
+# The forward record: the frozen det_gauss_v1 scored on every target date since the
+# freeze (2026-10-01), rebuilt weekly from the public price and forecast archives.
+# Collection is resumable, so each run only fetches the days added since the last.
+on:
+  schedule:
+    - cron: "23 7 * * 1"   # Monday 07:23 UTC
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: forward
+  cancel-in-progress: false
+jobs:
+  forward:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked
+      - run: uv run wvm backtest collect kalshi --window forward
+      - run: uv run wvm backtest collect polymarket --window forward
+      - run: uv run wvm backtest forecast --window forward
+      - run: uv run wvm backtest score --window forward
+      - run: uv run wvm publish

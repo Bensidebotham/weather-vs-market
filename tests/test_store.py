@@ -109,3 +109,10 @@ def test_delete_snapshots_for_markets(engine):
                              "lead_hours": 1.0}])
     S.delete_preds(engine, "m1", ["kalshi:A"])
     assert S.read_preds(engine) == []
+
+
+def test_result_docs_round_trip_and_replace(engine):
+    assert S.load_result(engine, "forward") is None
+    S.save_result(engine, "forward", {"n": 1}, generated_ts=1.0)
+    S.save_result(engine, "forward", {"n": 2}, generated_ts=2.0)
+    assert S.load_result(engine, "forward") == {"n": 2}

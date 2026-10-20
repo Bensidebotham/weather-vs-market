@@ -79,15 +79,16 @@ app.add_typer(backtest_app, name="backtest")
 
 
 def _window(name: str) -> tuple[str, str]:
-    from weather_vs_market.pipeline.backtest import TEST
+    from weather_vs_market.pipeline.backtest import TEST, forward_window
     from weather_vs_market.pipeline.fit import TRAIN
-    windows = {"train": TRAIN, "test": TEST, "dev": ("2025-04-01", "2025-06-30")}
+    windows = {"train": TRAIN, "test": TEST, "dev": ("2025-04-01", "2025-06-30"),
+               "forward": forward_window()}
     return windows[name]
 
 
 @backtest_app.command("collect")
 def backtest_collect(venue: str = typer.Argument(..., help="kalshi | polymarket"),
-                     window: str = typer.Option("test", help="train | dev | test"),
+                     window: str = typer.Option("test", help="train | dev | test | forward"),
                      only: str = typer.Option("", help="One Kalshi series or Polymarket city slug."),
                      refresh: bool = typer.Option(False, help="Re-fetch and replace this window's quotes.")):
     """Settled ladders, results and lead-point prices for a window."""
@@ -97,14 +98,14 @@ def backtest_collect(venue: str = typer.Argument(..., help="kalshi | polymarket"
 
 
 @backtest_app.command("forecast")
-def backtest_forecast(window: str = typer.Option("test", help="train | dev | test")):
+def backtest_forecast(window: str = typer.Option("test", help="train | dev | test | forward")):
     """det_gauss_v1 probabilities at each lead point for stored ladders."""
     from weather_vs_market.pipeline.backtest import forecast
     rprint(forecast(load_settings(), _engine(), *_window(window)))
 
 
 @backtest_app.command("score")
-def backtest_score(window: str = typer.Option(..., help="dev | test; required, the test is scored once")):
+def backtest_score(window: str = typer.Option(..., help="dev | test | forward; test is scored once")):
     """Score a window per the protocol and write results/backtest_<window>.json."""
     from weather_vs_market.pipeline.backtest import score
     doc = score(load_settings(), _engine(), _window(window), window)

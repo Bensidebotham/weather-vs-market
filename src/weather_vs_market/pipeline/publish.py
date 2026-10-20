@@ -45,6 +45,8 @@ def build_doc(settings: Settings, engine: Engine, now: float | None = None) -> d
         "schema_version": SCHEMA_VERSION,
         "generated_ts": now if now is not None else time.time(),
         "backtest": backtest,
+        # The frozen model scored on every target date since the freeze; refreshed weekly.
+        "forward": store.load_result(engine, "forward"),
         "live": {"model": ENSEMBLE_MODEL, "scores": live_scores(settings, engine)},
         "tracking": live.tracking_summary(engine),
         "live_disagreements": live.current_disagreements(engine, model=ENSEMBLE_MODEL, now=now),

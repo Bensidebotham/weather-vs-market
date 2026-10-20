@@ -84,6 +84,14 @@ published_result = Table(
 )
 
 
+result_doc = Table(
+    "result_doc", metadata,
+    Column("name", Text, primary_key=True),         # e.g. "forward": the weekly forward record
+    Column("generated_ts", Float, nullable=False),
+    Column("doc", Text, nullable=False),
+)
+
+
 def normalize_url(url: str) -> str:
     """Accept a Neon-style postgres URL, a SQLAlchemy URL, or a bare SQLite path."""
     for prefix in ("postgresql://", "postgres://"):
@@ -187,6 +195,21 @@ def publish(engine: Engine, doc: dict, generated_ts: float, keep: int = 48) -> N
         keep_ids = (select(published_result.c.id)
                     .order_by(published_result.c.id.desc()).limit(keep).scalar_subquery())
         c.execute(delete(published_result).where(published_result.c.id.not_in(keep_ids)))
+
+
+def save_result(engine: Engine, name: str, doc: dict, generated_ts: float) -> None:
+    """Store (or replace) a named results document, e.g. the forward record."""
+    stmt = _insert(engine, result_doc)
+    stmt = stmt.on_conflict_do_update(index_elements=["name"], set_={
+        "generated_ts": stmt.excluded.generated_ts, "doc": stmt.excluded.doc})
+    with engine.begin() as c:
+        c.execute(stmt, [{"name": name, "generated_ts": generated_ts, "doc": json.dumps(doc)}])
+
+
+def load_result(engine: Engine, name: str) -> dict | None:
+    with engine.connect() as c:
+        row = c.execute(select(result_doc.c.doc).where(result_doc.c.name == name)).first()
+    return json.loads(row[0]) if row else None
 
 
 def latest_published(engine: Engine) -> dict | None:

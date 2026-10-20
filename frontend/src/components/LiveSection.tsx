@@ -17,7 +17,7 @@ export default function LiveSection({ data }: { data: Dashboard }) {
       <div className="px-6 pt-5">
         <h2 className="text-base font-semibold text-[var(--color-text)]">Live tracking</h2>
         <p className="text-xs text-[var(--color-muted)] mt-1 max-w-2xl">
-          Every hour the pipeline snapshots open markets and a live ensemble model (GFS + ECMWF members, which
+          Twice an hour the pipeline snapshots open markets and a live ensemble model (GFS + ECMWF members, which
           have no archive and so can only be scored going forward). Settled city-days scored so far:{' '}
           {forward.join(' · ')}.
         </p>

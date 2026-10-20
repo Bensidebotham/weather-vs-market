@@ -128,3 +128,21 @@ def test_collect_reports_the_quotes_it_wrote(stubbed):
     settings, engine = stubbed
     counts = B.collect_kalshi(settings, engine, "2025-07-01", "2025-07-31", workers=2)
     assert counts["quotes"] == len(S.read_quotes(engine)) == 6
+
+
+def test_forward_window_runs_from_freeze_to_two_days_ago():
+    from datetime import date
+    assert B.forward_window(today=date(2026, 11, 3)) == ("2026-10-01", "2026-11-01")
+
+
+def test_score_stores_the_result_document(stubbed, monkeypatch, tmp_path):
+    settings, engine = stubbed
+    B.collect_kalshi(settings, engine, "2025-07-01", "2025-07-31", workers=1)
+    B.forecast(settings, engine, "2025-07-01", "2025-07-31")
+    monkeypatch.setattr(B, "ROOT", tmp_path)
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "det_gauss_v1.params.json").write_text(json.dumps({"params": []}))
+    monkeypatch.setattr(B, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setattr(B, "cli_agreement", lambda *a: {"n": 0})
+    B.score(settings, engine, ("2025-07-01", "2025-07-31"), "forward")
+    assert S.load_result(engine, "forward")["window_name"] == "forward"

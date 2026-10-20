@@ -121,3 +121,21 @@ training window only.
 
 Results are written to `results/backtest_test.json` and rendered by
 `wvm backtest report`.
+
+## Forward record
+
+The frozen `det_gauss_v1` (parameters from the training window, unchanged since
+the test run) is scored on every target date from 2026-10-01 on, exactly as in
+the test window: same lead points, price rules, inclusion criteria and scores.
+`.github/workflows/forward.yml` rebuilds it weekly from the archives, so it needs
+no live snapshots. It is reported separately from the test window and never
+pooled with it.
+
+## Forward amendment (2026-10-20): live Polymarket prices
+
+Affects only the live ensemble model's forward scores, not the backtest or the
+forward record. Live Polymarket quotes now use Polymarket's displayed price
+(Gamma `outcomePrices`), falling back to the bid/ask mid when it is missing. The
+backtest's Polymarket price (CLOB history) is that displayed price, so live and
+backtest now share one definition; and tail buckets with one-sided books, which
+had no live price, made every live Polymarket ladder unscoreable.
