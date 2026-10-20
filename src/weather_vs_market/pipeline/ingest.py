@@ -135,6 +135,15 @@ def _ingest_kalshi(settings: Settings, forecasts: Forecasts, cycle: Cycle) -> No
                 cycle.errors.append(f"kalshi {raw.get('ticker')}: {e}")
 
 
+def displayed_price(mkt: dict) -> float | None:
+    """Polymarket's displayed YES price (Gamma `outcomePrices[0]`), if it has one."""
+    try:
+        prices = json.loads(mkt.get("outcomePrices") or "[]")
+        return round(float(prices[0]), 4) if prices else None
+    except (TypeError, ValueError):
+        return None
+
+
 def polymarket_markets(ev: dict, city: str, station: str) -> list[tuple[dict, float | None, float | None]]:
     """(unified market, best bid, best ask) for each parseable bucket of a Gamma event."""
     out = []
@@ -152,6 +161,7 @@ def polymarket_markets(ev: dict, city: str, station: str) -> list[tuple[dict, fl
             "target_date": target.isoformat(), "bucket_lo": parsed[0], "bucket_hi": parsed[1],
             "unit": "F", "question": mkt.get("question"),
             "close_ts": datetime.fromisoformat(end.replace("Z", "+00:00")).timestamp() if end else None,
+            "_price": displayed_price(mkt),
         }, mkt.get("bestBid"), mkt.get("bestAsk")))
     return out
 
@@ -176,7 +186,12 @@ def _ingest_polymarket(settings: Settings, forecasts: Forecasts, cycle: Cycle) -
                 if not validate_unified(u):
                     continue
                 model_p = forecasts.prob(station, u["target_date"], u["bucket_lo"], u["bucket_hi"])
-                cycle.add(u, bid, ask, kalshi.market_prob_from_quote(bid, ask), model_p)
+                # The displayed price matches the backtest's CLOB price history and also
+                # prices one-sided tail books; the bid/ask mid is the fallback.
+                price = u.pop("_price")
+                if price is None:
+                    price = kalshi.market_prob_from_quote(bid, ask)
+                cycle.add(u, bid, ask, price, model_p)
 
 
 def run_once(settings: Settings, engine: Engine, now: float | None = None) -> dict:

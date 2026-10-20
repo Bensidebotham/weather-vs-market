@@ -78,7 +78,7 @@ def _pm_event(closed=False, prices=("0.5", "0.5"), site="klga"):
                                     "on October 17?", None, 0.30)]}
 
 
-def test_polymarket_live_ingest_uses_venue_station_and_two_sided_mid(monkeypatch, tmp_path):
+def test_polymarket_live_ingest_uses_venue_station_and_displayed_price(monkeypatch, tmp_path):
     engine = S.connect(str(tmp_path / "v.sqlite3"))
     s = _settings()
     s.venues.kalshi = []
@@ -92,8 +92,27 @@ def test_polymarket_live_ingest_uses_venue_station_and_two_sided_mid(monkeypatch
     assert set(markets) == {"polymarket:tokA", "polymarket:tokB"}
     assert markets["polymarket:tokA"]["station"] == "KLGA"
     assert markets["polymarket:tokA"]["event_key"] == "highest-temperature-in-nyc-on-october-17-2099"
-    assert [q["market_prob"] for q in S.read_quotes(engine)] == [0.2]    # tokB is one-sided
+    # Polymarket's displayed price, the same definition as its CLOB price history in the
+    # backtest; one-sided tail books (tokB) still get a price. Bid/ask are kept.
+    quotes = {q["market_uid"]: q for q in S.read_quotes(engine)}
+    assert quotes["polymarket:tokA"]["market_prob"] == 0.5
+    assert (quotes["polymarket:tokA"]["best_bid"], quotes["polymarket:tokA"]["best_ask"]) == (0.18, 0.22)
+    assert quotes["polymarket:tokB"]["market_prob"] == 0.5
     assert out["preds"] == 2 and out["status"] == "ok"
+
+
+def test_polymarket_live_price_falls_back_to_mid_without_displayed_price(monkeypatch, tmp_path):
+    engine = S.connect(str(tmp_path / "v.sqlite3"))
+    s = _settings()
+    s.venues.kalshi = []
+    s.venues.polymarket = load_settings().venues.polymarket[:1]
+    _patch_sources(monkeypatch, members=[58.6] * 30, markets=[])
+    ev = _pm_event()
+    for m in ev["markets"]:
+        m["outcomePrices"] = "[]"
+    monkeypatch.setattr(ingest.ph, "find_event", lambda slug, d: ev)
+    ingest.run_once(s, engine, now=1_000.0)
+    assert {q["market_uid"]: q["market_prob"] for q in S.read_quotes(engine)} == {"polymarket:tokA": 0.2}
 
 
 def test_polymarket_event_on_unexpected_station_is_skipped(monkeypatch, tmp_path):
