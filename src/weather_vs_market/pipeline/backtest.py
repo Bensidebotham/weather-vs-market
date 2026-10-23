@@ -14,7 +14,7 @@ import logging
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import httpx
 from sqlalchemy import Engine
@@ -41,8 +41,9 @@ SETTLE_LAG_DAYS = 2            # results and archives can trail the day by a day
 
 
 def forward_window(today: date | None = None) -> tuple[str, str]:
-    """Every target date since the freeze that has had time to settle."""
-    today = today or date.today()
+    """Every target date since the freeze that has had time to settle (UTC, so every
+    machine and CI agree on the window)."""
+    today = today or datetime.now(UTC).date()
     return FORWARD_START, (today - timedelta(days=SETTLE_LAG_DAYS)).isoformat()
 
 SOURCES = {"kalshi": "kalshi_candles", "polymarket": "polymarket_history"}
@@ -314,6 +315,21 @@ def cli_agreement(settings: Settings, engine: Engine, start: str, end: str) -> d
     return {"n": n, "agree": agree, "rate": round(agree / n, 4) if n else None}
 
 
+_EXAMPLE_KEYS = ("city", "target_date", "lead", "buckets", "model_probs", "market_probs", "outcomes")
+
+
+def latest_examples(events: list[dict], lead: str) -> list[dict]:
+    """The newest scored day per city at one lead point: the dashboard's worked example.
+
+    Chosen by date, not by outcome, so the example can't be cherry-picked.
+    """
+    newest: dict[str, dict] = {}
+    for e in events:
+        if e["lead"] == lead and e["target_date"] > newest.get(e["city"], {}).get("target_date", ""):
+            newest[e["city"]] = e
+    return [{k: newest[c][k] for k in _EXAMPLE_KEYS} for c in sorted(newest)]
+
+
 def _git_sha() -> str | None:
     try:
         return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
@@ -346,6 +362,7 @@ def score(settings: Settings, engine: Engine, window: tuple[str, str], name: str
                                 "model_brier": V.mean([e["model_brier"] for e in c]),
                                 "market_brier": V.mean([e["market_brier"] for e in c])})
         doc["venues"][venue] = {
+            "examples": latest_examples(events, lps[0].name),
             "summary": V.summarize(events, order=[lp.name for lp in lps]),
             "calibration": calibration, "by_city": by_city,
             "stats": stats,

@@ -19,7 +19,18 @@ export type Summary = {
 
 export type CurveBin = { bin: string; n: number; avg_prob: number | null; win_rate: number | null }
 
+export type Example = {
+  city: string
+  target_date: string
+  lead: string
+  buckets: [number | null, number | null][]
+  model_probs: number[]
+  market_probs: number[]
+  outcomes: number[]
+}
+
 export type VenueResult = {
+  examples?: Example[]
   summary: Summary[]
   calibration: Record<string, { model: CurveBin[]; market: CurveBin[] }>
   by_city: { lead: string; city: string; n_events: number; model_brier: number; market_brier: number }[]

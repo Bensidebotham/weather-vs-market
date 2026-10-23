@@ -4,6 +4,7 @@ import DiffChart from '@/components/DiffChart'
 import CalibrationChart from '@/components/CalibrationChart'
 import CityTable from '@/components/CityTable'
 import BlendSection from '@/components/BlendSection'
+import LadderExample from '@/components/LadderExample'
 import LiveSection from '@/components/LiveSection'
 import Method from '@/components/Method'
 import Footer from '@/components/Footer'
@@ -42,6 +43,13 @@ export default async function Page() {
               </p>
               <Headline backtest={forward} />
             </section>
+          )}
+          {forward && (
+            <LadderExample
+              examples={Object.fromEntries(
+                Object.entries(forward.venues).map(([v, r]) => [v, r.examples ?? []]),
+              )}
+            />
           )}
           {data?.blend && <BlendSection test={data.blend.test} forward={data.blend.forward} />}
           <CityTable backtest={backtest} />

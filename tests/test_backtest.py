@@ -146,3 +146,13 @@ def test_score_stores_the_result_document(stubbed, monkeypatch, tmp_path):
     monkeypatch.setattr(B, "cli_agreement", lambda *a: {"n": 0})
     B.score(settings, engine, ("2025-07-01", "2025-07-31"), "forward")
     assert S.load_result(engine, "forward")["window_name"] == "forward"
+
+
+def test_latest_examples_pick_the_newest_day_per_city_at_the_first_lead():
+    rows = [{"city": "NYC", "target_date": d, "lead": lead, "buckets": [], "model_probs": [],
+             "market_probs": [], "outcomes": []}
+            for d in ("2026-10-01", "2026-10-03", "2026-10-02") for lead in ("D-1 12:00", "D 08:00")]
+    rows.append({**rows[0], "city": "Miami", "target_date": "2026-09-30"})
+    ex = B.latest_examples(rows, "D-1 12:00")
+    assert [(e["city"], e["target_date"], e["lead"]) for e in ex] == [
+        ("Miami", "2026-09-30", "D-1 12:00"), ("NYC", "2026-10-03", "D-1 12:00")]
