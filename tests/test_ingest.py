@@ -20,7 +20,7 @@ def _settings():
 def _patch_sources(monkeypatch, members, markets):
     monkeypatch.setattr(ingest.kalshi, "fetch_markets", lambda series, status="open": markets)
     monkeypatch.setattr(ingest.ensemble, "get_ensemble_members", lambda *a, **k: members)
-    monkeypatch.setattr(ingest.obs, "get_running_max", lambda *a, **k: None)
+    monkeypatch.setattr(ingest.obs, "day_readings", lambda *a, **k: [])
     monkeypatch.setattr(ingest.obs, "is_day_locked", lambda *a, **k: False)
 
 
@@ -124,3 +124,17 @@ def test_polymarket_event_on_unexpected_station_is_skipped(monkeypatch, tmp_path
     monkeypatch.setattr(ingest.ph, "find_event", lambda slug, d: _pm_event(site="kjfk"))
     out = ingest.run_once(s, engine, now=1_000.0)
     assert S.read_markets(engine) == [] and out["status"] == "failed"
+
+
+def test_locked_day_with_a_gap_over_the_peak_is_not_locked(monkeypatch, tmp_path):
+    # Readings stop before noon: the day is past lock hour but its peak is unobserved,
+    # so the forecast (centered at 66.6F) must still drive the probabilities.
+    engine = S.connect(str(tmp_path / "v.sqlite3"))
+    raw = _kalshi_raw(ticker="KXHIGHNY-26OCT10-B66.5")
+    raw.update({"floor_strike": 66, "cap_strike": 67, "yes_sub_title": "66° to 67°"})
+    _patch_sources(monkeypatch, members=[66.6] * 30, markets=[raw])
+    monkeypatch.setattr(ingest.obs, "day_readings",
+                        lambda *a, **k: [(f"2026-10-10T{h:02d}:51", 55.0) for h in (6, 7, 8, 9)])
+    monkeypatch.setattr(ingest.obs, "is_day_locked", lambda *a, **k: True)
+    ingest.run_once(_settings(), engine, now=1_000.0)
+    assert S.read_preds(engine)[0]["model_prob"] > 0.4

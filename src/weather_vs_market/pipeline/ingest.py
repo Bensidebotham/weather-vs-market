@@ -59,10 +59,15 @@ class Forecasts:
         key = (station_id, target_date)
         if key not in self._cache:
             st = self.settings.station(station_id)
+            readings = obs.day_readings(st.id, st.tz, target_date)
+            # Lock only when the readings cover the afternoon peak; otherwise the
+            # running max is just a floor under the forecast.
+            locked = (obs.is_day_locked(st.tz, target_date, self.settings.ensemble.lock_hour_local)
+                      and obs.peak_covered(readings))
             self._cache[key] = (
                 ensemble.get_ensemble_members(st.lat, st.lon, st.tz, target_date, "F"),
-                obs.get_running_max(st.id, st.tz, target_date, "F"),
-                obs.is_day_locked(st.tz, target_date, self.settings.ensemble.lock_hour_local),
+                obs.running_max(readings),
+                locked,
             )
         return self._cache[key]
 
