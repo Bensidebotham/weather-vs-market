@@ -142,7 +142,8 @@ def event_frame(engine: Engine, *, venue: str, model: str, lead_points: list[Lea
                 drop("missing_market")
                 continue
             stats["scored"] = stats.get("scored", 0) + 1
-            model_p, market_p = _normalize(model_p), _normalize(market_p)
+            model_p = _normalize([float(x) for x in model_p if x is not None])
+            market_p = _normalize([float(x) for x in market_p if x is not None])
             frame.append({
                 "venue": venue, "event_key": event_key, "city": first["city"],
                 "target_date": first["target_date"], "lead": lp.name,

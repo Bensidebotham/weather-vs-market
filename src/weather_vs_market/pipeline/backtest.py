@@ -61,8 +61,8 @@ def kalshi_price(candle: dict) -> float | None:
     return round((bid + ask) / 2, 4)
 
 
-def as_of(points: list[tuple[float, float]], point_ts: float,
-          tolerance_s: float) -> tuple[float, float] | None:
+def as_of[T](points: list[tuple[float, T]], point_ts: float,
+             tolerance_s: float) -> tuple[float, T] | None:
     """The latest (ts, value) at or before point_ts and within tolerance."""
     best = None
     for ts, v in points:

@@ -187,10 +187,11 @@ def _ingest_polymarket(settings: Settings, forecasts: Forecasts, cycle: Cycle) -
                 cycle.errors.append(f"polymarket {ev.get('slug')}: settles on {station}, "
                                     f"expected {venue_city.station}")
                 continue
-            for u, bid, ask in polymarket_markets(ev, venue_city.city, station):
+            for u, bid, ask in polymarket_markets(ev, venue_city.city, venue_city.station):
                 if not validate_unified(u):
                     continue
-                model_p = forecasts.prob(station, u["target_date"], u["bucket_lo"], u["bucket_hi"])
+                model_p = forecasts.prob(venue_city.station, u["target_date"], u["bucket_lo"],
+                                         u["bucket_hi"])
                 # The displayed price matches the backtest's CLOB price history and also
                 # prices one-sided tail books; the bid/ask mid is the fallback.
                 price = u.pop("_price")

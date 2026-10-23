@@ -22,6 +22,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --locked
       - run: uv run ruff check src tests
+      - run: uv run pyright
       - run: uv run pytest -q
   frontend:
     runs-on: ubuntu-latest
