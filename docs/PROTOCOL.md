@@ -139,3 +139,34 @@ forward record. Live Polymarket quotes now use Polymarket's displayed price
 backtest's Polymarket price (CLOB history) is that displayed price, so live and
 backtest now share one definition; and tail buckets with one-sided books, which
 had no live price, made every live Polymarket ladder unscoreable.
+
+# Protocol v2: does the model add information to the market? (pre-registered 2026-10-22)
+
+Written before any blend weight was fit or scored.
+
+**Question.** det_gauss_v1 loses to the market on its own. Does mixing it into the
+market's ladder still improve on the market alone? If the model carries
+information the price has not absorbed, the blend wins; if not, the best blend
+is the market.
+
+**Blend (`blend_v1`).** A logarithmic opinion pool over each ladder:
+p(k) ∝ p_market(k)^a · p_model(k)^b, both floored at 0.001 before pooling and
+normalized after. a = 1, b = 0 is the market itself.
+
+**Fit.** a and b per venue and lead point, by grid search over [0, 2] in steps
+of 0.05, maximizing the mean log score of the winning bucket on training-window
+events (2024-01-01 to 2025-06-30) that pass the v1 inclusion rules, with the v1
+price rules. The model probabilities there are in-sample for det_gauss_v1's two
+parameters per station and lead; any optimism this causes favors the model, so
+it can only make a "the model adds nothing" result conservative. A bootstrap over
+training events (500 resamples, seed 0) gives an interval for b.
+
+**Scoring.** Blend vs. market on the test window and the forward record, with the
+v1 scores and paired bootstrap. The test window was already used to score v1
+against the market; it was not used to design or fit the blend, but this is a
+second analysis of it, so the forward record is the cleaner evidence and both
+are reported.
+
+**Reading the result.** "The model adds information" needs b's interval above 0
+and a blend − market difference below 0 on the forward record. Anything else is
+reported as "no evidence the model adds information beyond the price".
