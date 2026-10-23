@@ -22,6 +22,23 @@ dashboard. No trading happens anywhere in this repo; the deliverable is the meas
 | Polymarket | D 08:00 | 1,306 | 0.743 | 0.563 | +0.180 [+0.162, +0.199] |
 <!-- results:end -->
 
+### Does the model add anything to the price?
+
+A second pre-registered test pools the market's ladder with the model's,
+p ∝ market<sup>a</sup> · model<sup>b</sup>, with a and b fit on the training window only. If the
+model knew something the price didn't, the pool would beat the market out of sample.
+
+<!-- blend:start -->
+There is no evidence the model adds information beyond the market's price. On some venues the blend was worse than the market: weights fit on thin training data did not transfer.
+
+| Venue | Lead | Model weight b [95% CI] | City-days | Blend − market Brier [95% CI] |
+|---|---|---|---:|---|
+| Kalshi | D-1 12:00 | 0.25 [0.15, 0.35] | 1,756 | -0.002 [-0.005, +0.002] |
+| Kalshi | D 08:00 | 0.25 [0.10, 0.40] | 1,781 | +0.002 [-0.003, +0.006] |
+| Polymarket | D-1 12:00 | 0.25 [0.05, 0.50] | 1,283 | +0.011 [+0.007, +0.015] |
+| Polymarket | D 08:00 | 0.15 [0.00, 0.35] | 1,306 | +0.010 [+0.006, +0.014] |
+<!-- blend:end -->
+
 **Live dashboard:** https://weather-vs-market.vercel.app
 
 ![Dashboard](docs/img/dashboard.png)

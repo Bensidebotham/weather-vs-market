@@ -12,6 +12,18 @@ Polymarket, by Brier score, ranked probability score and log score. Every 95%
 interval excludes zero. The forward record, scored the same way on every day
 since the model was frozen, says the same thing so far (it's on the dashboard).
 
+## Does the model know anything the price doesn't?
+
+Losing on its own doesn't rule out the model carrying *some* information the
+market misses. A pre-registered blend (protocol v2) pools the two ladders with
+weights fit on the training window. In training, the model got a small weight
+(about a quarter of the market's) that was clearly above zero. Out of sample it
+bought nothing: on Kalshi the blend and the market are indistinguishable, and on
+Polymarket the blend was worse, because its weights came from roughly 150 thin
+early-2025 New York days that rewarded flattening the market's prices. The
+honest reading is that whatever the model knows, the price already has. The
+tables are in [RESULTS.md](RESULTS.md).
+
 ## Why the model loses
 
 **It sees older information, by design.** To rule out look-ahead, the backtest

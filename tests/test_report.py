@@ -45,3 +45,34 @@ def test_write_reports_from_results_file(tmp_path, monkeypatch):
     out = tmp_path / "RESULTS.md"
     R.write_reports(results, readme, out)
     assert "1,800" in readme.read_text() and "abc1234" in out.read_text()
+
+
+def _blend_doc(ci=(-0.005, 0.002)):
+    s = {"lead": "D-1 12:00", "n_events": 1756, "model_brier": 0.666, "market_brier": 0.667,
+         "brier_diff": -0.001, "brier_diff_ci": list(ci)}
+    return {"weights": {"kalshi": {"D-1 12:00": {"a": 1.15, "b": 0.25, "b_ci": [0.15, 0.35],
+                                                 "n_events": 1413}}},
+            "venues": {"kalshi": {"summary": [s]}}}
+
+
+def test_blend_table_reads_weights_and_test_scores():
+    md = R.blend_table(_blend_doc())
+    assert "| Kalshi | D-1 12:00 | 0.25 [0.15, 0.35] | 1,756 | -0.001 [-0.005, +0.002] |" in md
+
+
+def test_blend_verdict_follows_the_protocol_reading_rule():
+    assert "no evidence" in R.blend_verdict(_blend_doc())
+    assert "worse than the market" in R.blend_verdict(_blend_doc(ci=(0.008, 0.015)))
+    assert "adds information" in R.blend_verdict(_blend_doc(ci=(-0.02, -0.01)))
+
+
+def test_write_reports_fills_the_blend_block(tmp_path):
+    results = tmp_path / "backtest_test.json"
+    results.write_text(json.dumps(_doc()))
+    blend = tmp_path / "blend_test.json"
+    blend.write_text(json.dumps(_blend_doc()))
+    readme = tmp_path / "README.md"
+    readme.write_text("<!-- headline:start -->\n<!-- headline:end -->\n<!-- results:start -->\n"
+                      "<!-- results:end -->\n<!-- blend:start -->\n<!-- blend:end -->\n")
+    R.write_reports(results, readme, tmp_path / "RESULTS.md", blend_results=blend)
+    assert "0.25 [0.15, 0.35]" in readme.read_text()

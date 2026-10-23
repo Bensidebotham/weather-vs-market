@@ -121,7 +121,8 @@ def backtest_report():
     """Regenerate the README results block and docs/RESULTS.md from results/backtest_test.json."""
     from weather_vs_market.config import ROOT
     from weather_vs_market.pipeline.report import write_reports
-    write_reports(ROOT / "results" / "backtest_test.json", ROOT / "README.md", ROOT / "docs" / "RESULTS.md")
+    write_reports(ROOT / "results" / "backtest_test.json", ROOT / "README.md", ROOT / "docs" / "RESULTS.md",
+                  blend_results=ROOT / "results" / "blend_test.json")
     rprint("updated README.md and docs/RESULTS.md")
 
 

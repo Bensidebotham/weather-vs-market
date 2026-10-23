@@ -123,6 +123,32 @@ def full_report(doc: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def blend_verdict(doc: dict) -> str:
+    """Protocol v2's reading rule, applied to the test-window scores."""
+    rows = [r for v in doc["venues"].values() for r in v["summary"]]
+    if rows and all(r["brier_diff_ci"][1] < 0 for r in rows):
+        return "Adding the model to the market's prices improved them: the model adds information."
+    worse = [r for r in rows if r["brier_diff_ci"][0] > 0]
+    tail = (" On some venues the blend was worse than the market: weights fit on thin training data "
+            "did not transfer." if worse else "")
+    return "There is no evidence the model adds information beyond the market's price." + tail
+
+
+def blend_table(doc: dict) -> str:
+    rows = ["| Venue | Lead | Model weight b [95% CI] | City-days | Blend − market Brier [95% CI] |",
+            "|---|---|---|---:|---|"]
+    for venue, v in doc["venues"].items():
+        for r in v["summary"]:
+            w = doc["weights"].get(venue, {}).get(r["lead"])
+            if not w:
+                continue
+            lo, hi = r["brier_diff_ci"]
+            b = f"{w['b']:.2f} [{w['b_ci'][0]:.2f}, {w['b_ci'][1]:.2f}]"
+            diff = f"{r['brier_diff']:+.3f} [{lo:+.3f}, {hi:+.3f}]"
+            rows.append(f"| {VENUES.get(venue, venue)} | {r['lead']} | {b} | {r['n_events']:,} | {diff} |")
+    return "\n".join(rows)
+
+
 def replace_block(path: Path, name: str, content: str) -> None:
     text = path.read_text()
     pattern = re.compile(rf"(<!-- {name}:start -->\n).*?(<!-- {name}:end -->)", re.S)
@@ -131,8 +157,14 @@ def replace_block(path: Path, name: str, content: str) -> None:
     path.write_text(pattern.sub(lambda m: f"{m.group(1)}{content}\n{m.group(2)}", text))
 
 
-def write_reports(results: Path, readme: Path, out: Path) -> None:
+def write_reports(results: Path, readme: Path, out: Path, blend_results: Path | None = None) -> None:
     doc = json.loads(results.read_text())
     replace_block(readme, "headline", headline(doc))
     replace_block(readme, "results", results_table(doc))
-    out.write_text(full_report(doc))
+    report = full_report(doc)
+    if blend_results and blend_results.exists():
+        blend = json.loads(blend_results.read_text())
+        block = blend_verdict(blend) + "\n\n" + blend_table(blend)
+        replace_block(readme, "blend", block)
+        report += "\n## Does the model add information? (blend_v1, protocol v2)\n\n" + block + "\n"
+    out.write_text(report)

@@ -53,3 +53,14 @@ Per city-day means; lower is better for all three. Differences are model − mar
 | Polymarket | Miami | D 08:00 | 246 | 0.671 | 0.572 |
 | Polymarket | New York | D 08:00 | 450 | 0.789 | 0.564 |
 | Polymarket | San Francisco | D 08:00 | 182 | 0.780 | 0.639 |
+
+## Does the model add information? (blend_v1, protocol v2)
+
+There is no evidence the model adds information beyond the market's price. On some venues the blend was worse than the market: weights fit on thin training data did not transfer.
+
+| Venue | Lead | Model weight b [95% CI] | City-days | Blend − market Brier [95% CI] |
+|---|---|---|---:|---|
+| Kalshi | D-1 12:00 | 0.25 [0.15, 0.35] | 1,756 | -0.002 [-0.005, +0.002] |
+| Kalshi | D 08:00 | 0.25 [0.10, 0.40] | 1,781 | +0.002 [-0.003, +0.006] |
+| Polymarket | D-1 12:00 | 0.25 [0.05, 0.50] | 1,283 | +0.011 [+0.007, +0.015] |
+| Polymarket | D 08:00 | 0.15 [0.00, 0.35] | 1,306 | +0.010 [+0.006, +0.014] |
