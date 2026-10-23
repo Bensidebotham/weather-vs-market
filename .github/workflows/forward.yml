@@ -8,6 +8,7 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: read
+  issues: write
 concurrency:
   group: forward
   cancel-in-progress: false
@@ -27,3 +28,8 @@ jobs:
       - run: uv run wvm backtest score --window forward
       - run: uv run wvm blend score --window forward
       - run: uv run wvm publish
+      - name: Report failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/report-failure.sh

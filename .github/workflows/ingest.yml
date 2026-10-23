@@ -8,6 +8,7 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: read
+  issues: write
 concurrency:
   group: ingest
   cancel-in-progress: false
@@ -28,3 +29,8 @@ jobs:
       # so no commit or redeploy is needed for fresh data.
       - if: always()
         run: uv run wvm publish
+      - name: Report failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/report-failure.sh

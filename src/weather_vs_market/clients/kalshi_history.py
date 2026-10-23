@@ -30,7 +30,7 @@ BASE = "https://api.elections.kalshi.com/trade-api/v2"
 MAX_CANDLES = 5000
 MAX_TRIES = 8
 BACKOFF_S = 1.0
-MIN_INTERVAL_S = 0.25  # 4 req/s shared by all threads; ~7 req/s sustained draws 429s
+MIN_INTERVAL_S = 0.35  # ~3 req/s shared by all threads; 4 req/s drew steady 429s on /historical (2026-10)
 
 _PACER = http.Pacer(MIN_INTERVAL_S)
 
