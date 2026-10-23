@@ -9,3 +9,4 @@ data/
 .claude/worktrees/
 results/backtest_dev.json
 results/backtest_forward.json
+results/blend_forward.json
