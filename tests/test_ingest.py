@@ -138,3 +138,15 @@ def test_locked_day_with_a_gap_over_the_peak_is_not_locked(monkeypatch, tmp_path
     monkeypatch.setattr(ingest.obs, "is_day_locked", lambda *a, **k: True)
     ingest.run_once(_settings(), engine, now=1_000.0)
     assert S.read_preds(engine)[0]["model_prob"] > 0.4
+
+
+def test_cycle_fails_when_any_configured_venue_returns_no_markets(monkeypatch, tmp_path):
+    # 2026-10-23: Polymarket's station field changed format, every event was skipped,
+    # and the cycle still reported ok because Kalshi had markets.
+    engine = S.connect(str(tmp_path / "v.sqlite3"))
+    s = _settings()
+    s.venues.polymarket = load_settings().venues.polymarket[:1]
+    _patch_sources(monkeypatch, members=[72.6] * 30, markets=[_kalshi_raw()])
+    monkeypatch.setattr(ingest.ph, "find_event", lambda slug, d: _pm_event(site="kjfk"))
+    out = ingest.run_once(s, engine, now=1_000.0)
+    assert out["status"] == "failed" and out["markets"] == 1

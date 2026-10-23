@@ -211,7 +211,14 @@ def run_once(settings: Settings, engine: Engine, now: float | None = None) -> di
     store.insert_quotes(engine, cycle.quotes)
     store.insert_preds(engine, cycle.preds)
 
-    status = "ok" if cycle.markets else "failed"
+    # Every configured venue must contribute markets: when one breaks (an API format
+    # change), the others shouldn't keep the run looking healthy.
+    by_venue = {m["venue"] for m in cycle.markets}
+    expected = {v for v in ("kalshi", "polymarket") if getattr(settings.venues, v)}
+    missing = sorted(expected - by_venue)
+    if missing:
+        cycle.errors.append(f"no markets from: {', '.join(missing)}")
+    status = "ok" if cycle.markets and not missing else "failed"
     summary = {"status": status, "markets": len(cycle.markets), "quotes": len(cycle.quotes),
                "preds": len(cycle.preds), "skipped_preds": cycle.skipped_preds,
                "errors": len(cycle.errors)}

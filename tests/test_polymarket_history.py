@@ -196,3 +196,16 @@ def test_price_history_retries_429_but_not_400():
     with pytest.raises(httpx.HTTPStatusError):
         ph.fetch_price_history("tok", 0, 3600, client=client_for(bad))
     assert len(calls) == 1
+
+
+def test_resolution_station_from_aviationweather_metar_source():
+    # Format used from the 2026-10-23 events on.
+    ev = {"resolutionSource": "https://aviationweather.gov/api/data/metar?ids=KLGA&format=raw"
+                              "&date=2026-10-24T04:00:00Z&hours=27",
+          "description": "the highest temperature reported at LaGuardia Airport (KLGA) on 23 Oct '26."}
+    assert ph.resolution_station(ev) == "KLGA"
+
+
+def test_resolution_station_from_description_icao_in_parentheses():
+    ev = {"resolutionSource": "", "description": "reported at Miami International Airport (KMIA) on 23 Oct"}
+    assert ph.resolution_station(ev) == "KMIA"

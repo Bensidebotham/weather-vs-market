@@ -50,6 +50,10 @@ _TITLE_RE = re.compile(r"Highest temperature in .+ on ([A-Za-z]+)\.? (\d{1,2})\?
 _SITE_RE = re.compile(r"[?&]site=([A-Za-z0-9]{3,5})\b")
 # .../history/daily/us/ny/new-york-city/KLGA, and in Dec 2025 .../weather/KORD
 _WU_RE = re.compile(r"wunderground\.com/[\w/-]*?/([A-Z0-9]{4})\b")
+# From 2026-10-23 events point at the aviationweather.gov METAR API ("...metar?ids=KLGA")
+# and name the station in the description ("LaGuardia Airport (KLGA)").
+_AWC_RE = re.compile(r"aviationweather\.gov/\S*?[?&]ids=([A-Za-z0-9]{4})\b")
+_PAREN_ICAO_RE = re.compile(r"\((K[A-Z]{3})\)")
 
 
 def _get_json(client: httpx.Client, url: str, params=None):
@@ -127,7 +131,8 @@ def event_date(ev: dict) -> date | None:
 def resolution_station(ev: dict) -> str | None:
     """ICAO id of the settlement station, e.g. "site=klga" -> "KLGA"."""
     for text in (ev.get("resolutionSource") or "", ev.get("description") or ""):
-        m = _SITE_RE.search(text) or _WU_RE.search(text)
+        m = (_SITE_RE.search(text) or _WU_RE.search(text) or _AWC_RE.search(text)
+             or _PAREN_ICAO_RE.search(text))
         if m:
             return m.group(1).upper()
     return None
