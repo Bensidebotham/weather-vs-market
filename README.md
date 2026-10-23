@@ -68,6 +68,9 @@ only be scored going forward.
 
 ## Things the data taught me
 
+The longer version, including every bug that would have faked a win, is in
+[docs/FINDINGS.md](docs/FINDINGS.md).
+
 - **The model's confident calls were its worst.** Buckets it gave more than 50% won far less often than
   stated (calibration chart above), while the market's forecasts tracked their outcomes. Nearly all were
   open-ended tail buckets on days when GFS and ECMWF disagreed by several degrees, or at Los Angeles, where
@@ -126,7 +129,7 @@ src/weather_vs_market/
   pipeline/     ingest, settle, fit, backtest, publish, report
   storage/      SQLAlchemy store for SQLite and Postgres
 frontend/       Next.js dashboard
-docs/           PROTOCOL.md (pre-registration), RESULTS.md (generated)
+docs/           PROTOCOL.md (pre-registration), RESULTS.md (generated), FINDINGS.md
 ```
 
 ## Limitations
