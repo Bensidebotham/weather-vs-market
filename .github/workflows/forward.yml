@@ -25,4 +25,5 @@ jobs:
       - run: uv run wvm backtest collect polymarket --window forward
       - run: uv run wvm backtest forecast --window forward
       - run: uv run wvm backtest score --window forward
+      - run: uv run wvm blend score --window forward
       - run: uv run wvm publish

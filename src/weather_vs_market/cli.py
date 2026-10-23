@@ -125,6 +125,33 @@ def backtest_report():
     rprint("updated README.md and docs/RESULTS.md")
 
 
+blend_app = typer.Typer(no_args_is_help=True, help="blend_v1: does the model add to the market?")
+app.add_typer(blend_app, name="blend")
+
+
+@blend_app.command("fit")
+def blend_fit():
+    """Fit the market/model pool weights on the training window and freeze them."""
+    from weather_vs_market.pipeline.blend import WEIGHTS_FILE, run_fit
+    doc = run_fit(load_settings(), _engine())
+    for venue, leads in doc["weights"].items():
+        for lead, w in leads.items():
+            rprint(f"{venue:10} {lead:9} a={w['a']:.2f} b={w['b']:.2f} b CI {w['b_ci']} n={w['n_events']}")
+    rprint(f"-> {WEIGHTS_FILE}")
+
+
+@blend_app.command("score")
+def blend_score(window: str = typer.Option(..., help="test | forward")):
+    """Score the frozen blend against the market on a window."""
+    from weather_vs_market.pipeline.blend import run_score
+    doc = run_score(load_settings(), _engine(), _window(window), window)
+    for venue, v in doc["venues"].items():
+        for r in v["summary"]:
+            lo, hi = r["brier_diff_ci"]
+            rprint(f"{venue:10} {r['lead']:9} n={r['n_events']:4}  Brier blend {r['model_brier']:.4f}"
+                   f" market {r['market_brier']:.4f}  diff {r['brier_diff']:+.4f} [{lo:+.4f}, {hi:+.4f}]")
+
+
 @app.command()
 def report():
     """Live ensemble model vs. market, per venue and lead point."""

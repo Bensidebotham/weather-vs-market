@@ -12,6 +12,7 @@ dependencies = [
     "pyarrow",
     "sqlalchemy>=2.1.4",
     "psycopg[binary]>=3.3.6",
+    "numpy>=2.5.4",
 ]
 
 [project.scripts]

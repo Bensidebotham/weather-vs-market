@@ -47,6 +47,9 @@ def build_doc(settings: Settings, engine: Engine, now: float | None = None) -> d
         "backtest": backtest,
         # The frozen model scored on every target date since the freeze; refreshed weekly.
         "forward": store.load_result(engine, "forward"),
+        # blend_v1 (protocol v2): market and model pooled, scored against the market.
+        "blend": {"test": store.load_result(engine, "blend_test"),
+                  "forward": store.load_result(engine, "blend_forward")},
         "live": {"model": ENSEMBLE_MODEL, "scores": live_scores(settings, engine)},
         "tracking": live.tracking_summary(engine),
         "live_disagreements": live.current_disagreements(engine, model=ENSEMBLE_MODEL, now=now),

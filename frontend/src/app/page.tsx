@@ -3,6 +3,7 @@ import Headline from '@/components/Headline'
 import DiffChart from '@/components/DiffChart'
 import CalibrationChart from '@/components/CalibrationChart'
 import CityTable from '@/components/CityTable'
+import BlendSection from '@/components/BlendSection'
 import LiveSection from '@/components/LiveSection'
 import Method from '@/components/Method'
 import Footer from '@/components/Footer'
@@ -42,6 +43,7 @@ export default async function Page() {
               <Headline backtest={forward} />
             </section>
           )}
+          {data?.blend && <BlendSection test={data.blend.test} forward={data.blend.forward} />}
           <CityTable backtest={backtest} />
         </>
       ) : (

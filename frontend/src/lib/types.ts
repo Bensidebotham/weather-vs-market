@@ -39,6 +39,16 @@ export type Backtest = {
   data_quality: { kalshi_cli_agreement: { n: number; agree: number; rate: number | null } }
 }
 
+export type BlendWeights = { a: number; b: number; b_ci: [number, number]; log_loss: number; n_events: number }
+
+export type BlendResult = {
+  model: string
+  window_name: string
+  window: [string, string]
+  weights: Record<string, Record<string, BlendWeights>>
+  venues: Record<string, { summary: Summary[] }>
+}
+
 export type LiveDisagreement = {
   market_uid: string
   venue: string
@@ -69,6 +79,7 @@ export type Dashboard = {
   generated_ts: number
   backtest: Backtest | null
   forward?: Backtest | null
+  blend?: { test: BlendResult | null; forward: BlendResult | null }
   live: { model: string; scores: Record<string, { summary: Summary[]; n_events: number }> }
   tracking: {
     n_markets: number
