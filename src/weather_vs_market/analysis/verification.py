@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, select
 
 from weather_vs_market.storage import store
 
@@ -87,7 +87,7 @@ def complete_ladder(ladder: list[dict]) -> bool:
 def event_frame(engine: Engine, *, venue: str, model: str, lead_points: list[LeadPoint],
                 tz_for_city: dict[str, str], quote_sources: tuple[str, ...] | None = None,
                 tolerance_s: float = 2 * 3600, date_range: tuple[str, str] | None = None,
-                stats: dict | None = None) -> list[dict]:
+                stats: dict | None = None, quoted_events_only: bool = False) -> list[dict]:
     """One scored row per (event, lead point) with a complete, settled ladder.
 
     `date_range` keeps target dates within [start, end] (ISO, inclusive).
@@ -99,13 +99,25 @@ def event_frame(engine: Engine, *, venue: str, model: str, lead_points: list[Lea
     def drop(reason: str) -> None:
         stats[reason] = stats.get(reason, 0) + 1
 
-    markets = [m for m in store.read_markets(engine, store.vmarket.c.venue == venue)
-               if m["settled"]]
+    # Filter in SQL: settled ladders of this venue in the window, and only their quotes
+    # and predictions. With `quoted_events_only`, events with no quote at all from the
+    # sources are skipped entirely (live tracking: a day with no live snapshot was never
+    # tracked); otherwise they count as "missing_market" drops, as the protocol reports.
+    v, vq, vp = store.vmarket, store.vquote, store.vpred
+    base = [v.c.venue == venue, v.c.settled == 1]
+    if date_range:
+        base += [v.c.target_date >= date_range[0], v.c.target_date <= date_range[1]]
+    source_filter = [vq.c.source.in_(quote_sources)] if quote_sources else []
+    if quote_sources and quoted_events_only:
+        quoted = (select(v.c.event_key).join(vq, vq.c.market_uid == v.c.market_uid)
+                  .where(*base, *source_filter).distinct())
+        base.append(v.c.event_key.in_(quoted))
+    uids = select(v.c.market_uid).where(*base)
+    markets = store.read_markets(engine, *base)
     quotes, preds = defaultdict(list), defaultdict(list)
-    where = [store.vquote.c.source.in_(quote_sources)] if quote_sources else []
-    for q in store.read_quotes(engine, *where):
+    for q in store.read_quotes(engine, vq.c.market_uid.in_(uids), *source_filter):
         quotes[q["market_uid"]].append((q["ts"], q["market_prob"]))
-    for p in store.read_preds(engine, store.vpred.c.model == model):
+    for p in store.read_preds(engine, vp.c.model == model, vp.c.market_uid.in_(uids)):
         preds[p["market_uid"]].append((p["ts"], p["model_prob"]))
 
     events = defaultdict(list)

@@ -164,3 +164,33 @@ def test_bootstrap_does_not_depend_on_row_order():
     shuffled = events[:]
     random.Random(5).shuffle(shuffled)
     assert V.summarize(events, n_boot=300) == V.summarize(shuffled, n_boot=300)
+
+
+def test_rows_from_other_venues_and_sources_do_not_change_the_frame(engine):
+    _event(engine, probs_model=[0.1, 0.8, 0.1], probs_market=[0.2, 0.6, 0.2], winner=1)
+    kwargs = dict(venue="kalshi", model="m1", lead_points=[LEAD],
+                  tz_for_city={"New York": "America/New_York"}, quote_sources=("live",),
+                  quoted_events_only=True)
+    before_stats: dict = {}
+    before = V.event_frame(engine, **kwargs, stats=before_stats)
+    # noise: a Polymarket ladder, an unsettled Kalshi market, and quotes from another source
+    S.upsert_markets(engine, [market("polymarket:P1", venue="polymarket", event_key="PE"),
+                              market("kalshi:OPEN", event_key="OPEN")])
+    S.insert_quotes(engine, [{"ts": POINT_TS - 60, "market_uid": "kalshi:EV1-1", "market_prob": 0.99,
+                              "best_bid": None, "best_ask": None, "source": "kalshi_candles"}])
+    after_stats: dict = {}
+    assert V.event_frame(engine, **kwargs, stats=after_stats) == before
+    assert after_stats == before_stats
+
+
+def test_unquoted_events_count_as_missing_unless_quoted_only(engine):
+    _event(engine, probs_model=[0.1, 0.8, 0.1], probs_market=[0.2, 0.6, 0.2], winner=1)
+    S.upsert_markets(engine, [market("kalshi:NQ-0", event_key="NQ")])    # settled, never quoted
+    S.settle_markets(engine, [("kalshi:NQ-0", 1)])
+    kwargs = dict(venue="kalshi", model="m1", lead_points=[LEAD],
+                  tz_for_city={"New York": "America/New_York"}, quote_sources=("live",))
+    all_stats: dict = {}
+    V.event_frame(engine, **kwargs, stats=all_stats)
+    quoted_stats: dict = {}
+    V.event_frame(engine, **kwargs, stats=quoted_stats, quoted_events_only=True)
+    assert all_stats["events_in_window"] == 2 and quoted_stats["events_in_window"] == 1

@@ -32,25 +32,42 @@ def live_scores(settings: Settings, engine: Engine) -> dict:
         events = V.event_frame(engine, venue=venue, model=ENSEMBLE_MODEL,
                                lead_points=lead_points(settings),
                                tz_for_city=settings.city_timezones(venue), quote_sources=("live",),
-                               tolerance_s=settings.evaluation.tolerance_hours * 3600)
+                               tolerance_s=settings.evaluation.tolerance_hours * 3600,
+                               quoted_events_only=True)
         order = [lp.name for lp in lead_points(settings)]
         out[venue] = {"summary": V.summarize(events, order=order) if events else [],
                       "n_events": len(events)}
     return out
 
 
+LIVE_SCORES_MAX_AGE_S = 6 * 3600
+
+
+def cached_live_scores(settings: Settings, engine: Engine, now: float) -> dict:
+    """Live scores change only as days settle, but recomputing them reads every live
+    quote and prediction; on Neon's free tier (5 GB egress a month) doing that on
+    every hourly publish was most of the budget. Recompute at most every 6 hours."""
+    cached = store.load_result(engine, "live_scores")
+    if cached and now - cached["generated_ts"] < LIVE_SCORES_MAX_AGE_S:
+        return cached["scores"]
+    scores = live_scores(settings, engine)
+    store.save_result(engine, "live_scores", {"generated_ts": now, "scores": scores}, generated_ts=now)
+    return scores
+
+
 def build_doc(settings: Settings, engine: Engine, now: float | None = None) -> dict:
     backtest = json.loads(BACKTEST_RESULTS.read_text()) if BACKTEST_RESULTS.exists() else None
+    generated = now if now is not None else time.time()
     return {
         "schema_version": SCHEMA_VERSION,
-        "generated_ts": now if now is not None else time.time(),
+        "generated_ts": generated,
         "backtest": backtest,
         # The frozen model scored on every target date since the freeze; refreshed weekly.
         "forward": store.load_result(engine, "forward"),
         # blend_v1 (protocol v2): market and model pooled, scored against the market.
         "blend": {"test": store.load_result(engine, "blend_test"),
                   "forward": store.load_result(engine, "blend_forward")},
-        "live": {"model": ENSEMBLE_MODEL, "scores": live_scores(settings, engine)},
+        "live": {"model": ENSEMBLE_MODEL, "scores": cached_live_scores(settings, engine, generated)},
         "tracking": live.tracking_summary(engine),
         "live_disagreements": live.current_disagreements(engine, model=ENSEMBLE_MODEL, now=now),
     }

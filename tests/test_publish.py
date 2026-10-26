@@ -28,3 +28,14 @@ def test_publish_includes_the_stored_forward_record(engine):
     S.save_result(engine, "forward", {"window_name": "forward", "venues": {}}, generated_ts=1.0)
     doc = P.build_doc(load_settings(), engine)
     assert doc["forward"]["window_name"] == "forward"
+
+
+def test_live_scores_are_reused_within_six_hours(engine, monkeypatch):
+    calls = []
+    monkeypatch.setattr(P, "live_scores", lambda s, e: calls.append(1) or {"kalshi": {"n_events": 0}})
+    settings = load_settings()
+    P.build_doc(settings, engine, now=1_000_000.0)
+    P.build_doc(settings, engine, now=1_000_000.0 + 3600)
+    assert len(calls) == 1
+    P.build_doc(settings, engine, now=1_000_000.0 + 7 * 3600)
+    assert len(calls) == 2
