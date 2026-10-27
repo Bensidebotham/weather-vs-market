@@ -121,7 +121,7 @@ uv run wvm backtest score --window test            # -> results/backtest_test.js
 uv run wvm backtest report                         # -> README table + docs/RESULTS.md
 ```
 
-Set `DATABASE_URL` to use Postgres instead of SQLite. A weekly Parquet dump of every table is attached to
+Set `DATABASE_URL` to use Postgres instead of SQLite. A monthly Parquet dump of every table is attached to
 the [`data-latest` release](https://github.com/Bensidebotham/weather-vs-market/releases/tag/data-latest)
 for analysis without running anything.
 

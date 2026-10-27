@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta
 
 import httpx
-from sqlalchemy import Engine
+from sqlalchemy import Engine, func, select
 
 from weather_vs_market.analysis import verification as V
 from weather_vs_market.clients import kalshi
@@ -79,11 +79,12 @@ def _in(d: str | None, start: str, end: str) -> bool:
 
 
 def _quoted_uids(engine: Engine, source: str, n_points: int) -> set[str]:
-    """Markets that already have a backtest quote for every lead point."""
-    counts: dict[str, int] = {}
-    for q in store.read_quotes(engine, store.vquote.c.source == source):
-        counts[q["market_uid"]] = counts.get(q["market_uid"], 0) + 1
-    return {uid for uid, n in counts.items() if n >= n_points}
+    """Markets that already have a backtest quote for every lead point (counted in SQL)."""
+    q = store.vquote
+    stmt = (select(q.c.market_uid).where(q.c.source == source).group_by(q.c.market_uid)
+            .having(func.count() >= n_points))
+    with engine.connect() as c:
+        return {r[0] for r in c.execute(stmt)}
 
 
 def kalshi_lead_quote(uid: str, candles: list[dict], point_ts: float, tolerance_s: float,

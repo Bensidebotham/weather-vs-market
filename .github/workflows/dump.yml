@@ -1,7 +1,7 @@
 name: dump
 on:
   schedule:
-    - cron: "41 6 * * 1"   # weekly, Monday 06:41 UTC
+    - cron: "41 6 1 * *"   # monthly (1st, 06:41 UTC): a full read of every table, kept rare for the free tier
   workflow_dispatch: {}
 permissions:
   contents: write
