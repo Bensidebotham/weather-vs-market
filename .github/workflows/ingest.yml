@@ -1,10 +1,10 @@
 name: ingest
 on:
   schedule:
-    # Twice an hour, off the top of the hour. GitHub throttles scheduled runs (an
-    # hourly cron fired only 3-7 times a day in Oct 2026), so ask more often. Every
-    # 15 min would keep Neon's free-tier compute awake past its 100 CU-hour budget.
-    - cron: "7,37 * * * *"
+    # Backup only. The main trigger is a launchd job on the maintainer's Mac that
+    # dispatches this workflow shortly before each city's lead times (GitHub runs
+    # scheduled workflows hours late). Few runs keep Neon's free tier mostly asleep.
+    - cron: "37 3,11,14,18 * * *"
   workflow_dispatch: {}
 permissions:
   contents: read

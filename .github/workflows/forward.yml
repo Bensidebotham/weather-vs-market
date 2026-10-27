@@ -27,6 +27,8 @@ jobs:
       - run: uv run wvm backtest forecast --window forward
       - run: uv run wvm backtest score --window forward
       - run: uv run wvm blend score --window forward
+      # Keep the free-tier database small: drop live snapshots no score will read.
+      - run: uv run wvm compact
       - run: uv run wvm publish
       - name: Report failure
         if: failure() && github.event_name == 'schedule'

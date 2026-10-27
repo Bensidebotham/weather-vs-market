@@ -244,6 +244,11 @@ def latest_by_market(engine: Engine, table: Table, value_col: str, market_uids: 
         return {r[0]: (r[1], r[2]) for r in c.execute(stmt)}
 
 
+def distinct_uids(engine: Engine, table: Table, *where) -> set[str]:
+    with engine.connect() as c:
+        return {r[0] for r in c.execute(select(table.c.market_uid).where(*where).distinct())}
+
+
 def read_table(engine: Engine, table: Table, *where) -> list[dict]:
     with engine.connect() as c:
         return [dict(r) for r in c.execute(select(table).where(*where)).mappings()]

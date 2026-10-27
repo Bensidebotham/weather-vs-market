@@ -58,6 +58,16 @@ def dump(out: str = typer.Option("data/dump", help="Directory for the Parquet fi
 
 
 @app.command()
+def compact():
+    """Delete live snapshots of settled markets that live scoring never reads."""
+    from weather_vs_market.pipeline.compact import compact_live
+    from weather_vs_market.pipeline.publish import lead_points
+    s = load_settings()
+    tz = {**s.city_timezones("kalshi"), **s.city_timezones("polymarket")}
+    rprint(compact_live(_engine(), lead_points(s), tz))
+
+
+@app.command()
 def fit():
     """Fit det_gauss_v1 on the training window and freeze it in config/."""
     from weather_vs_market.pipeline.fit import PARAMS_FILE, run_fit
