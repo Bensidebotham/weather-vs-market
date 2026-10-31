@@ -39,6 +39,16 @@ There is no evidence the model adds information beyond the market's price. On so
 | Polymarket | D 08:00 | 0.15 [0.00, 0.35] | 1,306 | +0.010 [+0.006, +0.014] |
 <!-- blend:end -->
 
+### A better model, scored only on the future
+
+The losses pointed at three fixable flaws in the first model, so a second one was pre-registered
+([protocol v3](docs/PROTOCOL.md)) around them: GFS and ECMWF weighted by their past skill at each
+station instead of averaged, a seasonal bias instead of one per year, and wider uncertainty on days the
+two models disagree (EMOS, Gneiting et al. 2005). It was designed after studying the test window, so it
+is scored only on days after it was frozen. In its first forward scoring (Oct 1–29, 2026) it beat the
+first model clearly at the 08:00 lead on both venues and was still well behind the market. The table,
+refreshed weekly, is on the dashboard.
+
 **Live dashboard:** https://weather-vs-market.vercel.app
 
 ![Dashboard](docs/img/dashboard.png)

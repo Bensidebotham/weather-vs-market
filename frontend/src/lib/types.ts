@@ -60,6 +60,12 @@ export type BlendResult = {
   venues: Record<string, { summary: Summary[] }>
 }
 
+export type EmosResult = {
+  model: string
+  window: [string, string]
+  venues: Record<string, { vs_market: Summary[]; vs_v1: Summary[] }>
+}
+
 export type LiveDisagreement = {
   market_uid: string
   venue: string
@@ -91,6 +97,7 @@ export type Dashboard = {
   backtest: Backtest | null
   forward?: Backtest | null
   blend?: { test: BlendResult | null; forward: BlendResult | null }
+  emos?: EmosResult | null
   live: { model: string; scores: Record<string, { summary: Summary[]; n_events: number }> }
   tracking: {
     n_markets: number

@@ -4,6 +4,7 @@ import DiffChart from '@/components/DiffChart'
 import CalibrationChart from '@/components/CalibrationChart'
 import CityTable from '@/components/CityTable'
 import BlendSection from '@/components/BlendSection'
+import EmosSection from '@/components/EmosSection'
 import LadderExample from '@/components/LadderExample'
 import LiveSection from '@/components/LiveSection'
 import Method from '@/components/Method'
@@ -51,6 +52,7 @@ export default async function Page() {
               )}
             />
           )}
+          {data?.emos && <EmosSection result={data.emos} />}
           {data?.blend && <BlendSection test={data.blend.test} forward={data.blend.forward} />}
           <CityTable backtest={backtest} />
         </>

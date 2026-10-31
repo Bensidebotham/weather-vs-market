@@ -24,6 +24,18 @@ early-2025 New York days that rewarded flattening the market's prices. The
 honest reading is that whatever the model knows, the price already has. The
 tables are in [RESULTS.md](RESULTS.md).
 
+## Fixing what the losses pointed at
+
+The diagnosis below pointed at three flaws: averaging two models that disagree,
+one bias for the whole year, and a fixed spread. A second model (emos_v2,
+protocol v3) addresses each one and was fit on the training window only. Because it
+was designed after looking at the test window, it is scored only on the forward
+record. In its first scoring (Oct 1–29, 2026) it beat v1 clearly at the 08:00 lead
+on both venues, by Brier, RPS and log score, and was still well behind the market.
+Better modelling narrows the gap but doesn't close it, which fits the story below:
+the market is pricing information a day-old forecast can't contain. The live
+table is on the dashboard.
+
 ## Why the model loses
 
 **It sees older information, by design.** To rule out look-ahead, the backtest
