@@ -170,3 +170,30 @@ are reported.
 **Reading the result.** "The model adds information" needs b's interval above 0
 and a blend − market difference below 0 on the forward record. Anything else is
 reported as "no evidence the model adds information beyond the price".
+
+# Protocol v3: emos_v2, a model aimed at v1's diagnosed failures (pre-registered 2026-10-30)
+
+Written before any v2 code, fit or score.
+
+**Why.** The test window showed where det_gauss_v1 fails: averaging GFS and ECMWF
+on days they disagree, one bias for the whole year, and a fixed spread that is too
+confident exactly on those days (see FINDINGS.md). v2 was designed *after* looking
+at the test window, so the test window cannot evaluate it.
+
+**Model (`emos_v2`).** Ensemble model output statistics in the style of Gneiting et
+al. (2005), on the same two deterministic forecasts v1 uses, per settlement truth,
+station and lead offset:
+
+- mean = w·GFS + (1 − w)·ECMWF + b0 + b1·cos(2π·doy/365.25) + b2·sin(2π·doy/365.25)
+- σ² = s0² + k·(GFS − ECMWF)²
+
+w and b0–b2 by least squares (w clipped to [0, 1]), then s0² and k by least squares
+of the squared residuals on (GFS − ECMWF)² (k ≥ 0, σ ≥ 0.75 °F), on training-window
+days (2024-01-01 to 2025-06-30) only. Bucket probabilities, lead points, price rules,
+inclusion criteria and scores are exactly v1's.
+
+**Evaluation.** Only the forward record: target dates from 2026-10-01 on, none of
+which existed when the training data was chosen, rescored weekly. Two comparisons,
+each with the v1 paired event bootstrap: emos_v2 vs. the market, and emos_v2 vs.
+det_gauss_v1 on the same events. The dashboard labels these as forward results
+with their sample size; nothing about v2 is pooled with the test window.
