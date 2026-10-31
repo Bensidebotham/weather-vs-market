@@ -163,6 +163,41 @@ def blend_score(window: str = typer.Option(..., help="test | forward")):
                    f" market {r['market_brier']:.4f}  diff {r['brier_diff']:+.4f} [{lo:+.4f}, {hi:+.4f}]")
 
 
+v2_app = typer.Typer(no_args_is_help=True, help="emos_v2: the model aimed at v1's failures (protocol v3).")
+app.add_typer(v2_app, name="v2")
+
+
+@v2_app.command("fit")
+def v2_fit():
+    """Fit emos_v2 on the training window from the public archives and freeze it."""
+    from weather_vs_market.pipeline.v2 import PARAMS_FILE, run_fit
+    doc = run_fit(load_settings())
+    for truth, rows in doc["params"].items():
+        for r in rows:
+            rprint(f"{truth:5} {r['station']} lead {r['lead_days']}: w={r['w']:.2f} k={r['k']:.3f}")
+    rprint(f"-> {PARAMS_FILE}")
+
+
+@v2_app.command("forecast")
+def v2_forecast(window: str = typer.Option("forward", help="forward")):
+    """emos_v2 probabilities at each lead point for stored ladders."""
+    from weather_vs_market.pipeline.v2 import forecast
+    rprint(forecast(load_settings(), _engine(), *_window(window)))
+
+
+@v2_app.command("score")
+def v2_score(window: str = typer.Option("forward", help="forward (v2 is never scored on the test window)")):
+    """Score emos_v2 against the market and against det_gauss_v1."""
+    from weather_vs_market.pipeline.v2 import score
+    doc = score(load_settings(), _engine(), _window(window), window)
+    for venue, v in doc["venues"].items():
+        for label, rows in (("vs market", v["vs_market"]), ("vs v1", v["vs_v1"])):
+            for r in rows:
+                lo, hi = r["brier_diff_ci"]
+                rprint(f"{venue:10} {r['lead']:9} {label:9} n={r['n_events']:4} "
+                       f"Brier diff {r['brier_diff']:+.4f} [{lo:+.4f}, {hi:+.4f}]")
+
+
 @app.command()
 def report():
     """Live ensemble model vs. market, per venue and lead point."""

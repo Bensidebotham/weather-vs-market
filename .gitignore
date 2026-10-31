@@ -10,3 +10,4 @@ data/
 results/backtest_dev.json
 results/backtest_forward.json
 results/blend_forward.json
+results/emos_forward.json
